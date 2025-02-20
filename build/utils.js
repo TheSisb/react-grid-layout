@@ -242,6 +242,8 @@ function collides(l1 /*: LayoutItem*/, l2 /*: LayoutItem*/) /*: boolean*/{
 function compact(layout /*: Layout*/, compactType /*: CompactType*/, cols /*: number*/, allowOverlap /*: ?boolean*/) /*: Layout*/{
   // Statics go in the compareWith array right away so items flow around them.
   const compareWith = getStatics(layout);
+  // We keep track of the bottom position.
+  let b = bottom(compareWith);
   // We go through the items by row and column.
   const sorted = sortLayoutItems(layout, compactType);
   // Holding for new items.
@@ -251,7 +253,8 @@ function compact(layout /*: Layout*/, compactType /*: CompactType*/, cols /*: nu
 
     // Don't move static elements
     if (!l.static) {
-      l = compactItem(compareWith, l, compactType, cols, sorted, allowOverlap);
+      l = compactItem(compareWith, l, compactType, cols, sorted, allowOverlap, b);
+      b = Math.max(b, l.y + l.h);
 
       // Add to comparison array. We only collide with items before this one.
       // Statics are already in this array.
@@ -302,14 +305,14 @@ function resolveCompactionCollision(layout /*: Layout*/, item /*: LayoutItem*/, 
  * Modifies item.
  *
  */
-function compactItem(compareWith /*: Layout*/, l /*: LayoutItem*/, compactType /*: CompactType*/, cols /*: number*/, fullLayout /*: Layout*/, allowOverlap /*: ?boolean*/) /*: LayoutItem*/{
+function compactItem(compareWith /*: Layout*/, l /*: LayoutItem*/, compactType /*: CompactType*/, cols /*: number*/, fullLayout /*: Layout*/, allowOverlap /*: ?boolean*/, b /*: number*/) /*: LayoutItem*/{
   const compactV = compactType === "vertical";
   const compactH = compactType === "horizontal";
   if (compactV) {
     // Bottom 'y' possible is the bottom of the layout.
     // This allows you to do nice stuff like specify {y: Infinity}
     // This is here because the layout must be sorted in order to get the correct bottom `y`.
-    l.y = Math.min(bottom(compareWith), l.y);
+    l.y = Math.min(b, l.y);
     // Move the element up as far as it can go without colliding.
     while (l.y > 0 && !getFirstCollision(compareWith, l)) {
       l.y--;
